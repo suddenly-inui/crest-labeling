@@ -22,19 +22,6 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     );
 
     notification();
-
-    // flnp.zonedSchedule(
-    //   0,
-    //   'title',
-    //   'body',
-    //   tz.TZDateTime.now(tz.local).add(Duration(seconds: 20)),
-    //   NotificationDetails(),
-    //   androidAllowWhileIdle: true,
-    //   uiLocalNotificationDateInterpretation:
-    //       UILocalNotificationDateInterpretation.absoluteTime,
-    // );
-    // //FlutterLocalNotificationsPlugin.periodicallyShow()
-    // print(tz.TZDateTime.now(tz.UTC).add(Duration(seconds: 20)));
   }
 
   void notification() async {
