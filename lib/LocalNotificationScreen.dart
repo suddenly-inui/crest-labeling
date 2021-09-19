@@ -15,14 +15,10 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
 
   @override
   void initState() {
-    flnp.initialize(
-      InitializationSettings(
-        iOS: IOSInitializationSettings(),
-      ),
-    );
-
     notification();
   }
+
+  //1回目の起動時に通知許可の前に通知設定がなされるため通知が行われない問題
 
   void notification() async {
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -37,8 +33,17 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     var platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
         iOS: iOSPlatformChannelSpecifics);
-    await flnp.periodicallyShow(0, 'Title', 'Body', RepeatInterval.everyMinute,
-        platformChannelSpecifics);
+
+    flnp
+        .initialize(
+          InitializationSettings(
+            iOS: IOSInitializationSettings(),
+          ),
+        )
+        .then((value) => {
+              flnp.periodicallyShow(0, 'Title', 'Body',
+                  RepeatInterval.everyMinute, platformChannelSpecifics)
+            });
   }
 
   @override
