@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum RadioValue { FIRST, SECOND, THIRD, FOURTH, FIFTH }
 final flnp = FlutterLocalNotificationsPlugin();
@@ -12,39 +13,48 @@ class LocalNotificationScreen extends StatefulWidget {
 
 class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
   RadioValue _gValue = RadioValue.THIRD;
+  List<DropdownMenuItem<int>> _notificationInterval = [
+    DropdownMenuItem(
+      child: Text("毎分"),
+      value: 0,
+    ),
+    DropdownMenuItem(
+      child: Text("毎時"),
+      value: 1,
+    ),
+    DropdownMenuItem(
+      child: Text("毎日"),
+      value: 2,
+    ),
+    DropdownMenuItem(
+      child: Text("毎週"),
+      value: 3,
+    )
+  ];
+  List<RepeatInterval> intervalList = [
+    RepeatInterval.everyMinute,
+    RepeatInterval.hourly,
+    RepeatInterval.daily,
+    RepeatInterval.weekly,
+  ];
+  int _selectedItem = 0;
 
   @override
   void initState() {
-    notification();
+    loadNotificationInterval();
+    prepareNotification();
   }
 
-  //1回目の起動時に通知許可の前に通知設定がなされるため通知が行われない問題
-
-  void notification() async {
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'alarm_notif',
-      'Scheduled notification', //name of the notif channel
-      'A scheduled notification', //description of the notif channel
-      icon: 'question',
-      largeIcon: DrawableResourceAndroidBitmap('question'),
-    );
-    var iOSPlatformChannelSpecifics = IOSNotificationDetails(
-        presentAlert: true, presentBadge: true, presentSound: true);
-    var platformChannelSpecifics = NotificationDetails(
-        android: androidPlatformChannelSpecifics,
-        iOS: iOSPlatformChannelSpecifics);
-
-    flnp
-        .initialize(
-          InitializationSettings(
-            iOS: IOSInitializationSettings(),
-          ),
-        )
-        .then((value) => {
-              flnp.periodicallyShow(0, 'Title', 'Body',
-                  RepeatInterval.everyMinute, platformChannelSpecifics)
-            });
-  }
+  var platformChannelSpecifics = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'alarm_notif',
+        'Scheduled notification', //name of the notif channel
+        'A scheduled notification', //description of the notif channel
+        icon: 'question',
+        largeIcon: DrawableResourceAndroidBitmap('question'),
+      ),
+      iOS: IOSNotificationDetails(
+          presentAlert: true, presentBadge: true, presentSound: true));
 
   @override
   Widget build(BuildContext context) {
@@ -98,18 +108,71 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
               SizedBox(
                 height: 50.0,
               ),
-              ElevatedButton(
-                onPressed: () {
-                  // send to DB. the value is in _gValue.
-                  print(_gValue);
-                },
-                child: Text("送信"),
-              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        sendDB(_gValue);
+                      },
+                      child: Text("送信"),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: DropdownButton<int>(
+                      items: _notificationInterval,
+                      value: _selectedItem,
+                      onChanged: (value) {
+                        setState(
+                          () {
+                            _selectedItem = value!;
+                          },
+                        );
+                        saveNotificationInterval(value!);
+                        prepareNotification();
+                      },
+                    ),
+                  )
+                ],
+              )
             ],
           ),
         ),
       ),
     );
+  }
+  //ここをいじってデータベースに送信
+  void sendDB(value) {
+    print(value);
+  }
+
+  void saveNotificationInterval(int num) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt("notificationInterval", num);
+  }
+
+  void loadNotificationInterval() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      _selectedItem = prefs.getInt("notificationInterval") ?? 0;
+    });
+  }
+
+  void prepareNotification() async {
+    flnp
+        .initialize(
+          InitializationSettings(
+            iOS: IOSInitializationSettings(),
+          ),
+        )
+        .then((value) => {
+              flnp.periodicallyShow(0, 'Title', 'Body',
+                  intervalList[_selectedItem], platformChannelSpecifics)
+            });
   }
 
   _onRadioSelected(value) {
