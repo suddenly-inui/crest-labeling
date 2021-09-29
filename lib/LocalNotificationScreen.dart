@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
+import "package:intl/intl.dart";
+import 'package:device_info/device_info.dart';
 
 enum RadioValue { FIRST, SECOND, THIRD, FOURTH, FIFTH }
 final flnp = FlutterLocalNotificationsPlugin();
@@ -144,9 +149,44 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
       ),
     );
   }
-  //ここをいじってデータベースに送信
-  void sendDB(value) {
-    print(value);
+
+  //データベースに送信
+  void sendDB(value) async {
+    //時間、ラベル(-2〜2)
+    DateTime time = DateTime.now();
+    DateFormat timeFormat = DateFormat('yyyy-MM-dd H:m:s');
+    String times = timeFormat.format(time);
+
+    final header = {
+      HttpHeaders.contentTypeHeader: 'application/json',
+    };
+
+    Map<RadioValue, String> label = {
+      RadioValue.FIRST: "-2",
+      RadioValue.SECOND: "-1",
+      RadioValue.THIRD: "0",
+      RadioValue.FOURTH: "1",
+      RadioValue.FIFTH: "2",
+    };
+
+    final body = json.encode({
+      "id": 97,
+      "device_id": "a28a128d-afa9-4eb5-ab51-0e059e9aadb9",
+      "label": label[value]
+    });
+
+    final uri = Uri.http('minami.jn.sfc.keio.ac.jp:80', "/");
+    final res = await http.post(
+      uri,
+      headers: header,
+      body: body,
+    );
+  }
+
+  Future<String> getDeviceId() async {
+    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+    IosDeviceInfo iosDeviceInfo = await deviceInfo.iosInfo;
+    return iosDeviceInfo.identifierForVendor;
   }
 
   void saveNotificationInterval(int num) async {
@@ -170,7 +210,7 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
           ),
         )
         .then((value) => {
-              flnp.periodicallyShow(0, 'Title', 'Body',
+              flnp.periodicallyShow(0, ' ', '現在の感情を入力してください',
                   intervalList[_selectedItem], platformChannelSpecifics)
             });
   }
