@@ -4,8 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
-import "package:intl/intl.dart";
-import 'package:device_info/device_info.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 enum RadioValue { FIRST, SECOND, THIRD, FOURTH, FIFTH }
 final flnp = FlutterLocalNotificationsPlugin();
@@ -20,28 +20,23 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
   RadioValue _gValue = RadioValue.THIRD;
   List<DropdownMenuItem<int>> _notificationInterval = [
     DropdownMenuItem(
-      child: Text("毎分"),
-      value: 0,
-    ),
-    DropdownMenuItem(
-      child: Text("毎時"),
+      child: Text("1時間"),
       value: 1,
     ),
     DropdownMenuItem(
-      child: Text("毎日"),
-      value: 2,
+      child: Text("3時間"),
+      value: 3,
     ),
     DropdownMenuItem(
-      child: Text("毎週"),
-      value: 3,
+      child: Text("5時間"),
+      value: 5,
+    ),
+    DropdownMenuItem(
+      child: Text("7時間"),
+      value: 7,
     )
   ];
-  List<RepeatInterval> intervalList = [
-    RepeatInterval.everyMinute,
-    RepeatInterval.hourly,
-    RepeatInterval.daily,
-    RepeatInterval.weekly,
-  ];
+
   int _selectedItem = 0;
 
   @override
@@ -120,7 +115,11 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
                     padding: const EdgeInsets.all(8.0),
                     child: ElevatedButton(
                       onPressed: () {
-                        sendDB(_gValue);
+                        try {
+                          sendDB(_gValue);
+                        } catch (e) {
+                          print("server not connected...");
+                        }
                       },
                       child: Text("送信"),
                     ),
@@ -152,11 +151,6 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
 
   //データベースに送信
   void sendDB(value) async {
-    //時間、ラベル(-2〜2)
-    DateTime time = DateTime.now();
-    DateFormat timeFormat = DateFormat('yyyy-MM-dd H:m:s');
-    String times = timeFormat.format(time);
-
     final header = {
       HttpHeaders.contentTypeHeader: 'application/json',
     };
@@ -170,7 +164,6 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     };
 
     final body = json.encode({
-      "id": 97,
       "device_id": "a28a128d-afa9-4eb5-ab51-0e059e9aadb9",
       "label": label[value]
     });
@@ -181,12 +174,6 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
       headers: header,
       body: body,
     );
-  }
-
-  Future<String> getDeviceId() async {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    IosDeviceInfo iosDeviceInfo = await deviceInfo.iosInfo;
-    return iosDeviceInfo.identifierForVendor;
   }
 
   void saveNotificationInterval(int num) async {
@@ -202,17 +189,36 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     });
   }
 
-  void prepareNotification() async {
+  void prepareNotification() {
     flnp
         .initialize(
           InitializationSettings(
             iOS: IOSInitializationSettings(),
           ),
         )
-        .then((value) => {
-              flnp.periodicallyShow(0, ' ', '現在の感情を入力してください',
-                  intervalList[_selectedItem], platformChannelSpecifics)
-            });
+        .then((value) => {sendNotification(0, _selectedItem)})
+        .then((value) => {sendNotification(1, 2 * _selectedItem)})
+        .then((value) => {sendNotification(2, 3 * _selectedItem)})
+        .then((value) => {sendNotification(3, 4 * _selectedItem)})
+        .then((value) => {sendNotification(4, 5 * _selectedItem)})
+        .then((value) => {sendNotification(5, 6 * _selectedItem)})
+        .then((value) => {sendNotification(6, 7 * _selectedItem)})
+        .then((value) => {sendNotification(7, 8 * _selectedItem)})
+        .then((value) => {sendNotification(8, 9 * _selectedItem)})
+        .then((value) => {sendNotification(9, 10 * _selectedItem)})
+        .then((value) => {sendNotification(10, 11 * _selectedItem)});
+  }
+
+  void sendNotification(int id, int interval) {
+    flnp.zonedSchedule(
+        id,
+        "title",
+        "body",
+        tz.TZDateTime.now(tz.UTC).add(Duration(hours: interval)),
+        platformChannelSpecifics,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        androidAllowWhileIdle: true);
   }
 
   _onRadioSelected(value) {
