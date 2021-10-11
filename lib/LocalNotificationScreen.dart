@@ -20,20 +20,20 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
   RadioValue _gValue = RadioValue.THIRD;
   List<DropdownMenuItem<int>> _notificationInterval = [
     DropdownMenuItem(
-      child: Text("1時間"),
+      child: Text("9-12-18-21"),
+      value: 0,
+    ),
+    DropdownMenuItem(
+      child: Text("???"),
       value: 1,
     ),
     DropdownMenuItem(
-      child: Text("3時間"),
+      child: Text("???"),
+      value: 2,
+    ),
+    DropdownMenuItem(
+      child: Text("???"),
       value: 3,
-    ),
-    DropdownMenuItem(
-      child: Text("5時間"),
-      value: 5,
-    ),
-    DropdownMenuItem(
-      child: Text("7時間"),
-      value: 7,
     )
   ];
 
@@ -42,7 +42,12 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
   @override
   void initState() {
     loadNotificationInterval();
-    prepareNotification();
+    flnp.initialize(
+      InitializationSettings(
+        iOS: IOSInitializationSettings(),
+      ),
+    );
+    timeNotification(9, 12, 18, 21);
   }
 
   var platformChannelSpecifics = NotificationDetails(
@@ -136,11 +141,19 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
                           },
                         );
                         saveNotificationInterval(value!);
-                        prepareNotification();
+                        timeNotification(9, 12, 18, 21);
                       },
                     ),
                   )
                 ],
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  //デバッグ//
+
+                  //デバッグ//
+                },
+                child: Text("Debug"),
               )
             ],
           ),
@@ -149,7 +162,6 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     );
   }
 
-  //データベースに送信
   void sendDB(value) async {
     final header = {
       HttpHeaders.contentTypeHeader: 'application/json',
@@ -189,36 +201,43 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     });
   }
 
-  void prepareNotification() {
-    flnp
-        .initialize(
-          InitializationSettings(
-            iOS: IOSInitializationSettings(),
-          ),
-        )
-        .then((value) => {sendNotification(0, _selectedItem)})
-        .then((value) => {sendNotification(1, 2 * _selectedItem)})
-        .then((value) => {sendNotification(2, 3 * _selectedItem)})
-        .then((value) => {sendNotification(3, 4 * _selectedItem)})
-        .then((value) => {sendNotification(4, 5 * _selectedItem)})
-        .then((value) => {sendNotification(5, 6 * _selectedItem)})
-        .then((value) => {sendNotification(6, 7 * _selectedItem)})
-        .then((value) => {sendNotification(7, 8 * _selectedItem)})
-        .then((value) => {sendNotification(8, 9 * _selectedItem)})
-        .then((value) => {sendNotification(9, 10 * _selectedItem)})
-        .then((value) => {sendNotification(10, 11 * _selectedItem)});
-  }
-
-  void sendNotification(int id, int interval) {
-    flnp.zonedSchedule(
+  void timeNotification(int t1, int t2, int t3, int t4) {
+    void sendNotification(int id, int hour, int addday) {
+      tz.initializeTimeZones();
+      tz.TZDateTime dt = tz.TZDateTime.now(tz.getLocation("Asia/Tokyo"));
+      if (hour <= dt.hour) {
+        addday += 1;
+      }
+      flnp.zonedSchedule(
         id,
-        "title",
-        "body",
-        tz.TZDateTime.now(tz.UTC).add(Duration(hours: interval)),
+        "時間です",
+        "今の感情を入力してください",
+        tz.TZDateTime(
+          tz.getLocation("Asia/Tokyo"),
+          dt.year,
+          dt.month,
+          dt.day,
+          hour,
+        ).add(Duration(days: addday)),
         platformChannelSpecifics,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
-        androidAllowWhileIdle: true);
+        androidAllowWhileIdle: true,
+      );
+    }
+
+    sendNotification(0, t1, 0);
+    sendNotification(1, t2, 0);
+    sendNotification(2, t3, 0);
+    sendNotification(3, t4, 0);
+    sendNotification(4, t1, 1);
+    sendNotification(5, t2, 1);
+    sendNotification(6, t3, 1);
+    sendNotification(7, t4, 1);
+    sendNotification(8, t1, 2);
+    sendNotification(9, t2, 2);
+    sendNotification(10, t3, 2);
+    sendNotification(11, t4, 2);
   }
 
   _onRadioSelected(value) {
