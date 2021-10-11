@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:numberpicker/numberpicker.dart';
 
 enum RadioValue { FIRST, SECOND, THIRD, FOURTH, FIFTH }
 final flnp = FlutterLocalNotificationsPlugin();
@@ -18,26 +19,11 @@ class LocalNotificationScreen extends StatefulWidget {
 
 class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
   RadioValue _gValue = RadioValue.THIRD;
-  List<DropdownMenuItem<int>> _notificationInterval = [
-    DropdownMenuItem(
-      child: Text("9-12-18-21"),
-      value: 0,
-    ),
-    DropdownMenuItem(
-      child: Text("???"),
-      value: 1,
-    ),
-    DropdownMenuItem(
-      child: Text("???"),
-      value: 2,
-    ),
-    DropdownMenuItem(
-      child: Text("???"),
-      value: 3,
-    )
-  ];
 
-  int _selectedItem = 0;
+  int t1 = 9;
+  int t2 = 12;
+  int t3 = 18;
+  int t4 = 21;
 
   @override
   void initState() {
@@ -47,7 +33,7 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
         iOS: IOSInitializationSettings(),
       ),
     );
-    timeNotification(9, 12, 18, 21);
+    timeNotification(t1, t2, t3, t4);
   }
 
   var platformChannelSpecifics = NotificationDetails(
@@ -110,46 +96,80 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
                 groupValue: _gValue,
                 onChanged: (value) => _onRadioSelected(value),
               ),
-              SizedBox(
-                height: 50.0,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 32),
+                child: ElevatedButton(
+                  onPressed: () {
+                    try {
+                      sendDB(_gValue);
+                    } catch (e) {
+                      print("server not connected...");
+                    }
+                  },
+                  child: Text("送信"),
+                ),
+              ),
+              Text(
+                "--通知感覚の指定--",
+                style: TextStyle(fontSize: 18),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        try {
-                          sendDB(_gValue);
-                        } catch (e) {
-                          print("server not connected...");
-                        }
-                      },
-                      child: Text("送信"),
-                    ),
+                  NumberPicker(
+                    minValue: 0,
+                    maxValue: 23,
+                    value: t1,
+                    onChanged: (value) {
+                      setState(() {
+                        t1 = value;
+                      });
+                      timeNotification(t1, t2, t3, t4);
+                      saveNotificationInterval(t1, t2, t3, t4);
+                    },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: DropdownButton<int>(
-                      items: _notificationInterval,
-                      value: _selectedItem,
-                      onChanged: (value) {
-                        setState(
-                          () {
-                            _selectedItem = value!;
-                          },
-                        );
-                        saveNotificationInterval(value!);
-                        timeNotification(9, 12, 18, 21);
-                      },
-                    ),
-                  )
+                  NumberPicker(
+                    minValue: 0,
+                    maxValue: 23,
+                    value: t2,
+                    onChanged: (value) {
+                      setState(() {
+                        t2 = value;
+                      });
+                      timeNotification(t1, t2, t3, t4);
+                      saveNotificationInterval(t1, t2, t3, t4);
+                    },
+                  ),
+                  NumberPicker(
+                    minValue: 0,
+                    maxValue: 23,
+                    value: t3,
+                    onChanged: (value) {
+                      setState(() {
+                        t3 = value;
+                      });
+                      timeNotification(t1, t2, t3, t4);
+                      saveNotificationInterval(t1, t2, t3, t4);
+                    },
+                  ),
+                  NumberPicker(
+                    minValue: 0,
+                    maxValue: 23,
+                    value: t4,
+                    onChanged: (value) {
+                      setState(() {
+                        t4 = value;
+                      });
+                      timeNotification(t1, t2, t3, t4);
+                      saveNotificationInterval(t1, t2, t3, t4);
+                    },
+                  ),
                 ],
               ),
               ElevatedButton(
                 onPressed: () {
                   //デバッグ//
+                  print("$t1, $t2, $t3, $t4");
 
                   //デバッグ//
                 },
@@ -188,16 +208,22 @@ class _LocalNotificationScreenState extends State<LocalNotificationScreen> {
     );
   }
 
-  void saveNotificationInterval(int num) async {
+  void saveNotificationInterval(int t1, int t2, int t3, int t4) async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setInt("notificationInterval", num);
+    prefs.setInt("t1", t1);
+    prefs.setInt("t2", t2);
+    prefs.setInt("t3", t3);
+    prefs.setInt("t4", t4);
   }
 
   void loadNotificationInterval() async {
     final prefs = await SharedPreferences.getInstance();
 
     setState(() {
-      _selectedItem = prefs.getInt("notificationInterval") ?? 0;
+      t1 = prefs.getInt("t1") ?? 9;
+      t2 = prefs.getInt("t2") ?? 12;
+      t3 = prefs.getInt("t3") ?? 18;
+      t4 = prefs.getInt("t4") ?? 21;
     });
   }
 
